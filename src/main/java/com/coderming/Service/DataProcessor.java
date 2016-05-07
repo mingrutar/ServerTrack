@@ -12,13 +12,17 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.apache.log4j.Logger;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import com.coderming.controller.MonitorController;
 import com.coderming.model.UsageLoad;
 
 @Service
 public class DataProcessor {
+	static Logger logger = Logger.getLogger(MonitorController.class.getName());
+	
 	final static long MINUTE = 60 * 1000;	// in milli
 	final static long HOUR = 60 * MINUTE;	// in millisec;
 
@@ -161,6 +165,7 @@ public class DataProcessor {
 	}
 	@Scheduled(fixedRate = 60000)							// in ms,		
 	public void processRawData() {
+		
 		for (Map.Entry<String, Deque<double[]>> entry : rawData.entrySet() ) {
 			String server = entry.getKey();
 			if (!entry.getValue().isEmpty()) {

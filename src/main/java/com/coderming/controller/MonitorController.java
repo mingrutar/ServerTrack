@@ -10,6 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.coderming.Service.DataProcessor;
@@ -28,20 +30,26 @@ public class MonitorController {
 		dataProcessor = dp;
 	}
 
-	@RequestMapping(value = "/daily", method = RequestMethod.GET)
-	Collection<UsageLoad> getDailyData(@PathVariable("server") String serverName) {
+	@RequestMapping(value = "/daily/{server}", method = RequestMethod.GET)
+	public @ResponseBody Collection<UsageLoad> getDailyData(@PathVariable("server") String serverName) {
 		return dataProcessor.getUsageData(serverName, true);
 	}
 	
-	@RequestMapping(value = "/hourly", method = RequestMethod.GET)
-	Collection<UsageLoad> getHourlyData(@PathVariable("server") String serverName) {
+	@RequestMapping(value = "/hourly/{server}", method = RequestMethod.GET)
+	public @ResponseBody Collection<UsageLoad> getHourlyData(@PathVariable("server") String serverName) {
 		return dataProcessor.getUsageData(serverName, false);
 	}
 
 	@RequestMapping(method = RequestMethod.GET)
-	ResponseEntity<?> add(@PathVariable("server") String serverName
-			, @PathVariable("cpu-usage") double cpuload
-			, @PathVariable("mem-usage")double memload) {
+	public @ResponseBody String hello(@RequestParam("test") String test) {
+		return "test=" + test;
+	}
+	
+	@RequestMapping(value="/{server}", method = RequestMethod.GET)
+	public ResponseEntity<?> add(@PathVariable("server") String serverName,
+			@RequestParam("cpu") String cpu, @RequestParam("mem") String mem) {
+		double cpuload = Double.parseDouble(cpu);
+		double memload = Double.parseDouble(mem);
 		dataProcessor.add(serverName, cpuload, memload);
 		HttpHeaders httpHeaders = new HttpHeaders();
 		return new ResponseEntity<>(null, httpHeaders, HttpStatus.OK);

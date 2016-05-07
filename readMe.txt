@@ -24,3 +24,8 @@ This should return data (if it has any) for the given server:
 
 Both endpoints would be under a continuous load being called multiple times a second. 
 There is no need to persist the results to storage.
+
+to run:
+     java -jar target/century-link-0.0.1-SNAPSHOT.jar
+     
+    java -Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=8000,suspend=n -jar target/century-link-0.0.1-SNAPSHOT.jar    
