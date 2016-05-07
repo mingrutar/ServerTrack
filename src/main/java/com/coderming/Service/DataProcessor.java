@@ -36,7 +36,7 @@ public class DataProcessor {
 		
 		HourlyUsageData() {
 			cpu = new double[HourMinute];
-			cpu = new double[HourMinute];
+			mem = new double[HourMinute];
 			reset();
 		}
 		void reset() {
@@ -44,7 +44,8 @@ public class DataProcessor {
 			Arrays.fill(cpu, 0);
 			Arrays.fill(mem, 0);
 		}
-		double[] calcHourlyAverage(int toIdx, HourlyUsageData earliest) {
+		double[] calcHourlyAverage(int toIdx, HourlyUsageData prev) {
+			logger.debug(String.format("+++HourlyUsageData::calcHourlyAverage: currentIdx=%d, toIdx=%d",currentIdx, toIdx));
 			int i = 0;
 			double[] ret = new double[2]; 
 			for (; i < toIdx; i++) {
@@ -52,24 +53,28 @@ public class DataProcessor {
 				ret[1] += mem[i];
 			}
 			for (; i < HourMinute; i++) {
-				ret[0] += earliest.cpu[i];
-				ret[1] += earliest.mem[i];
+				ret[0] += prev.cpu[i];
+				ret[1] += prev.mem[i];
 			}
 			ret[0] /= HourMinute;
 			ret[1] /= HourMinute;
 			return ret;
 		}
 		List<UsageLoad> getData( HourlyUsageData prev) {
+			logger.debug(String.format("---HourlyUsageData::getData: currentIdx=%d",currentIdx));
 			List<UsageLoad> ret = new ArrayList<>();
 			Date endMinute = timestamp;
 			Date startMinute = new Date();
 			int i;
-			for (i = currentIdx; i >= 0; i++) {
+			int last = currentIdx-1;
+			if (last < 0)
+				last = HourMinute - 1;
+			for (i = last; i >= 0; i--) {
 				startMinute.setTime(endMinute.getTime() - MINUTE);
 				ret.add( new UsageLoad(startMinute, endMinute, cpu[i], mem[i] ) );
 				endMinute = startMinute;
 			}
-			for (i = HourMinute-1; i > currentIdx; i++) {
+			for (i = HourMinute-1; i >= currentIdx; i--) {
 				startMinute.setTime(endMinute.getTime() - MINUTE);
 				ret.add( new UsageLoad(startMinute, endMinute, prev.cpu[i], prev.mem[i] ) );
 				endMinute = startMinute;
@@ -89,7 +94,10 @@ public class DataProcessor {
 			}
 			cpu[currentIdx] = minCpu/count;
 			mem[currentIdx] = minMem/count;
-			return (++currentIdx == HourMinute);
+			boolean bret = (++currentIdx == HourMinute);
+			if (bret)
+				currentIdx = 0;
+			return bret;
 		}
 	}
 	class DailyUsageData {
@@ -111,7 +119,8 @@ public class DataProcessor {
 				int idx = (currentIdx - i );
 				if (idx < 0)
 					idx += 25;
-				int prev = (idx >0) ? idx-1 : 25;
+				int prev = (idx >0) ? idx-1 : 24;
+				logger.debug(String.format("+++DailyUsageData::getByDay call hourData[idx].calcHourlyAverage: idx=%d,prev=%d",idx, prev));
 				double[] usage = hourData[idx].calcHourlyAverage(toIdx, hourData[prev]);
 				startHour.setTime(endHour.getTime() - HOUR);
 				ret.add( new UsageLoad(startHour, endHour, usage[0], usage[1]));
@@ -120,7 +129,8 @@ public class DataProcessor {
 			return ret;
 		}
 		List<UsageLoad> getByHour() {
-			int prev = (currentIdx > 0) ? (currentIdx -1) : 25;
+			int prev = (currentIdx > 0) ? (currentIdx -1) : 24;
+			logger.debug(String.format("---DailyUsageData::getByHour call hourData[idx].getData: currentIdx=%d,prev=%d",currentIdx, prev));
 			return hourData[currentIdx].getData(hourData[prev]);
 		}
 		void update(Deque<double[]> rawData) {
@@ -165,7 +175,7 @@ public class DataProcessor {
 	}
 	@Scheduled(fixedRate = 60000)							// in ms,		
 	public void processRawData() {
-		
+		logger.debug(" --processRawData is called");
 		for (Map.Entry<String, Deque<double[]>> entry : rawData.entrySet() ) {
 			String server = entry.getKey();
 			if (!entry.getValue().isEmpty()) {
@@ -175,7 +185,6 @@ public class DataProcessor {
 					dailyLoad.put(server, usage);
 				} else 
 					usage = dailyLoad.get(server);
-				// use threadpool?
 				usage.update(entry.getValue());
 			}
 		}
