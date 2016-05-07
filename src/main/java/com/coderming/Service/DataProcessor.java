@@ -161,9 +161,9 @@ public class DataProcessor {
 	}
 	@Scheduled(fixedRate = 60000)							// in ms,		
 	public void processRawData() {
-		for (MapEntry<String, Deque<double[]>> entry : rawData ) {
-			String server = entry.key;
-			if (!entry.value().IsEmpty()) {
+		for (Map.Entry<String, Deque<double[]>> entry : rawData.entrySet() ) {
+			String server = entry.getKey();
+			if (!entry.getValue().isEmpty()) {
 				DailyUsageData usage;
 				if (!dailyLoad.containsKey(server)) {
 					usage = new DailyUsageData();
@@ -171,7 +171,7 @@ public class DataProcessor {
 				} else 
 					usage = dailyLoad.get(server);
 				// use threadpool?
-				usage.update(entry.value());
+				usage.update(entry.getValue());
 			}
 		}
 	}
